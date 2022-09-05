@@ -1,5 +1,20 @@
 version: '3.3'
 services:
+
+#proxy
+  proxy:
+    image: 'jc21/nginx-proxy-manager:latest'
+    restart: unless-stopped #ensure survives crashes
+    ports:
+      - '80:80'
+      - '81:81' #admin panel
+      - '443:443'
+    volumes:
+      - ./proxy/data:/data
+      - ./proxy/letsencrypt:/etc/letsencrypt
+      - ./proxy/config.json:/app/config/production.json #config database
+
+#vpn
   wireguard:
     image: linuxserver/wireguard
     container_name: wireguard
@@ -24,3 +39,28 @@ services:
     sysctls:
       - net.ipv4.conf.all.src_valid_mark=1
     restart: unless-stopped
+
+#web
+  www:
+    image: nginx
+    restart: unless-stopped
+    expose:
+    - '8080'
+    volumes:
+    - ./web/public_html:/usr/share/nginx/html
+
+#db
+  db:
+    image: mariadb
+    command: --transaction-isolation=READ-COMMITTED --binlog-format=ROW
+    restart: unless-stopped
+    expose:
+      - '3306'
+    volumes:
+      - ./db:/var/lib/mysql
+    environment:
+      - MYSQL_DATABASE=changeMe
+      - MYSQL_USER=changeMe
+      - MYSQL_PASSWORD=changeMe
+      - MYSQL_ROOT_PASSWORD=changeMe
+
